@@ -20,7 +20,9 @@ btn_increase = 18
 buzzer = 33
 p_l = None
 p_b = None  
+play = "Start"
 eeprom = ES2EEPROMUtils.ES2EEPROM()
+eeprom.clear(2048)
 eeprom.populate_mock_scores()
 
 # Print the game banner
@@ -43,16 +45,21 @@ def menu():
     global j 
     global p_l
     global p_b
+    global play
+  
+    end_of_game=False
     
     option = input("Select an option:   H - View High Scores     P - Play Game       Q - Quit\n")
     option = option.upper()
     if option == "H":
         os.system('clear')
+        play="Scores"
         print("HIGH SCORES!!")
         s_count, ss = fetch_scores()
         display_scores(s_count, ss)
     elif option == "P":
         os.system('clear')
+        play="Begin"
         print("Starting a new round!")
         print("Use the buttons on the Pi to make and submit your guess!")
         print("Press and hold the guess button to cancel your game")
@@ -80,10 +87,11 @@ def display_scores(count, raw_data):
 
 # Setup Pins
 def setup():
-    global pwmLed
-    global pwmBuzz
+    global p_l
+    global p_b
     # Setup board mode
     GPIO.setmode(GPIO.BOARD)
+    
     GPIO.setup(LED_value, GPIO.OUT)
     GPIO.output(LED_value, False)
     # Setup regular GPIO
@@ -136,7 +144,7 @@ def fetch_scores():
 def save_scores(new):
     score_num,sd = fetch_scores()
     score_num+=1
-    eeprom.clear(2048)
+    #eeprom.clear(2048)
     eeprom.write_block(0, [5])
     
     sd.append(new)
@@ -146,8 +154,9 @@ def save_scores(new):
         for letter in score[0]:
             data_to_write.append(ord(letter))
         data_to_write.append(score[1])
+        eeprom.write_block(i+1, data_to_write)
     #eeprom.write_block(0,[score_num])
-    eeprom.write_block(i+1, data_to_write)
+    
     # fetch scores
     # include new score
     # sort
@@ -168,7 +177,9 @@ def re(org_str, index, rep):
 
 # Increase button pressed
 def btn_increase_pressed(channel):
-    if (GPIO.input(channel)==0): # Pull up resistors are being used therefore logic one is its normal state
+    global guess_num
+    global play
+    if (GPIO.input(channel)==0 and play == "Begin"): # Pull up resistors are being used therefore logic one is its normal state
         global guess_num
         if(guess_num>=7):
             guess_num=1
@@ -204,50 +215,59 @@ def stop():
 
 # Guess button
 def btn_guess_pressed(channel):
-    start()
-    
-    w=0
-    while GPIO.input(channel)==0:
-        sleep(0.01)
-    time_passed = stop()
-
+    global play
     global value
     global guess_num
     global end_of_game
     global j
+    global start_sec
     
-    s= value
-    y =guess_num
-    diff=abs(s-y)
-    time_compare=2
+    start()
     
-    if (time_passed>=time_compare):
-        menu()
-        GPIO.cleanup()
+    w=0
+    while GPIO.input(channel)==0:
+        sleep(0.05)
+    if (play== "Begin"):    
+        t_pass=stop()
+    
+        s= value
+        y =guess_num
+        diff=abs(s-y)
+        time_compare=2
+    
+    if (t_pass>=time_compare):
+        #menu()
+        #GPIO.cleanup()
+        play = "Start"
         end_of_game=True
         j = 0
         start_sec =0
         guess_num=0
         p_l.ChangeDutyCycle(0)
         p_b.ChangeDutyCycle(0)   
-        
+        GPIO.output(LED_value, False)
 
     else:
-        if (diff>0):
+        if (diff>0 and guess!=0):
             j+=1 # if the difference between the guess and the number is greater than zero
             accuracy_leds() # the the LEDs will be flashed and the buzzer will be sounded
-            trigger_buzzer()  
+            trigger_buzzer() 
+            print("{}-is your guess".format(j))
         else:
-            GPIO.cleanup()
+            print("{}-is your guess".format(guess))
+            #GPIO.cleanup()
             p_l.ChangeDutyCycle(0)
-            p_b.ChangeDutyCycle(0)            
+            p_b.ChangeDutyCycle(0)  
+            GPIO.output(LED_value, False)
             print("Well done champion, you the winnnneerr!! Whooo ")
+            print(value)
             name = input("Please enter your name: ")
             if (len(name)>3):
                 name=name[0]+name[1]+name[2]             
             saves_scores([name,j])
             
-            menu()
+            #menu()
+            play="Start"
             j = 0
             start_sec =0
             guess_num=0            
