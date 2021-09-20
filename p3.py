@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import random
 import ES2EEPROMUtils
 import os
-from time import time
+import time
 from time import sleep
 
 # some global variables that need to change as we run the program
@@ -18,8 +18,8 @@ LED_accuracy = 32
 btn_submit = 16
 btn_increase = 18
 buzzer = 33
-pwmLed = None
-pwmBuzz = None  
+p_l = None
+p_b = None  
 eeprom = ES2EEPROMUtils.ES2EEPROM()
 eeprom.populate_mock_scores()
 
@@ -160,6 +160,11 @@ def save_scores(new):
 def generate_number():
     return random.randint(1, pow(2, 3)-1)
 
+def re(org_str, index, rep):
+    new_str = org_str
+    if index < len(org_str):
+       new_str = org_str[0:index] + rep + org_str[index + 1:]
+    return new_str
 
 # Increase button pressed
 def btn_increase_pressed(channel):
@@ -172,6 +177,13 @@ def btn_increase_pressed(channel):
                      # Increase the value shown on the LEDs
     a=bin(guess_num).replace("0b","") # this converts the number to binary and ommits the "0b" from it
     a=a[::-1]
+    l_num = '000'
+    print("{}-is your guess".format(guess_num))
+    for i in range(3):
+        try:
+          l_num = re(l_num,i,a[i])
+        except IndexError:
+          continue
     GPIO.output(LED_value, (int(a[0]),int(a[1]),int(a[2]))) # display the number being guessed through the LEDs
  # j to binary using
 # You can choose to have a global variable store the user’s current guess,
