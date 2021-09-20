@@ -195,7 +195,7 @@ def btn_increase_pressed(channel):
           l_num = re(l_num,i,a[i])
         except IndexError:
           continue
-    GPIO.output(LED_value, (int(a[0]),int(a[1]),int(a[2]))) # display the number being guessed through the LEDs
+    GPIO.output(LED_value, (int(l_num[0]),int(l_num[1]),int(l_num[2]))) # display the number being guessed through the LEDs
  # j to binary using
 # You can choose to have a global variable store the user’s current guess,
 # or just pull the value off the LEDs when a user makes a guess
@@ -248,13 +248,13 @@ def btn_guess_pressed(channel):
         GPIO.output(LED_value, False)
 
     else:
-        if (diff>0 and guess!=0):
+        if (diff>0 and guess_num!=0):
             j+=1 # if the difference between the guess and the number is greater than zero
             accuracy_leds() # the the LEDs will be flashed and the buzzer will be sounded
             trigger_buzzer() 
             print("{}-is your guess".format(j))
         else:
-            print("{}-is your guess".format(guess))
+            print("{}-is your guess".format(guess_num))
             #GPIO.cleanup()
             p_l.ChangeDutyCycle(0)
             p_b.ChangeDutyCycle(0)  
